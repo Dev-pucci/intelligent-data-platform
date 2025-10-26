@@ -4,10 +4,10 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .routers import data, webhooks, scrapers
-from .schemas import SiteConfig, SiteConfigCreate
-from ..database.connection import get_db, Site
-from .metrics import API_REQUESTS_TOTAL
+from api.routers import data, webhooks, scrapers
+from api.schemas import SiteConfig, SiteConfigCreate
+from database.connection import get_db, Site
+from api.metrics import API_REQUESTS_TOTAL
 
 openapi_tags = [
     {
@@ -114,7 +114,7 @@ async def health_check():
     return {"status": "ok"}
 
 from fastapi.responses import Response # New import
-from .metrics import get_metrics_response, SCRAPER_REQUESTS_TOTAL, API_REQUESTS_TOTAL # New import
+from api.metrics import get_metrics_response, SCRAPER_REQUESTS_TOTAL, API_REQUESTS_TOTAL # New import
 
 # ... (existing imports) ...
 

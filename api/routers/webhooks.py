@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, status
-from ..schemas import ScrapeTriggerRequest, StatusUpdate, DataIngest # New import
+from api.schemas import ScrapeTriggerRequest, StatusUpdate, DataIngest # New import
 
 logger = logging.getLogger(__name__)
 

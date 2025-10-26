@@ -5,8 +5,8 @@ from pydantic import BaseModel # Keep BaseModel for other potential local models
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from ...database.connection import get_db, ScrapedData # Import get_db and ScrapedData model
-from ..schemas import ScrapedDataItem # New import for ScrapedDataItem
+from database.connection import get_db, ScrapedData # Import get_db and ScrapedData model
+from api.schemas import ScrapedDataItem # New import for ScrapedDataItem
 
 router = APIRouter()
 @router.get("/data", response_model=List[ScrapedDataItem])
