@@ -2,6 +2,45 @@
 # This file tells Render.com how to deploy your application
 
 services:
+  # Python Scraper API Service
+  - type: web
+    name: intelligent-data-platform-api
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Database Connection
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: scraper-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: scraper-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: scraper-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: scraper-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: scraper-db
+          property: password
+
+      # API Keys
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-pro
+
   # n8n Workflow Automation
   - type: web
     name: intelligent-data-platform-n8n

@@ -4,7 +4,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .routers import data, webhooks
+from .routers import data, webhooks, scrapers
 from .schemas import SiteConfig, SiteConfigCreate
 from ..database.connection import get_db, Site
 from .metrics import API_REQUESTS_TOTAL
@@ -21,6 +21,10 @@ openapi_tags = [
     {
         "name": "Sites",
         "description": "Manage website configurations for scraping.",
+    },
+    {
+        "name": "Scrapers",
+        "description": "Execute and manage scraping jobs.",
     },
     {
         "name": "Monitoring",
@@ -53,6 +57,7 @@ app.add_middleware(
 api_v1_router = APIRouter(prefix="/api/v1")
 api_v1_router.include_router(data.router, tags=["Data"])
 api_v1_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
+api_v1_router.include_router(scrapers.router, prefix="/scrapers", tags=["Scrapers"])
 
 # --- Site Management Endpoints ---
 @api_v1_router.post("/sites", response_model=SiteConfig, status_code=status.HTTP_201_CREATED, tags=["Sites"])
