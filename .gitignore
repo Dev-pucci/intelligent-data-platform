@@ -81,3 +81,6 @@ wheels/
 # Temporary files
 tmp/
 temp/
+
+# Documentation with leaked credentials
+md/
