@@ -1,0 +1,70 @@
+name: "Python Documentation"
+type: html
+seed_url: "https://docs.python.org/3/library/"
+
+# Crawler settings
+url_patterns: ["/library/", "/tutorial/", "/reference/", "/howto/"]
+max_depth: 3
+
+# Parser settings (for HTMLScraper) - Documentation structure
+parser_type: css
+parser_config:
+  # Python docs have a clean, semantic structure
+  container: "div.document"
+  fields:
+    title: "h1 ::text"
+    section: "div.section"
+    heading: "h2, h3 ::text"
+    content: "div.section p ::text"
+    code_examples: "pre ::text"
+    api_signature: "dl.function dt ::text"
+    api_description: "dl.function dd ::text"
+    last_updated: "div.last-updated ::text"
+    url: "link[rel='canonical'] ::attr(href)"
+    breadcrumb: "nav[aria-label='breadcrumbs'] a ::text"
+
+# Code-specific extraction
+code_parser:
+  parser_type: css
+  parser_config:
+    container: "div.highlight-python"
+    fields:
+      language: "::attr(class)"
+      code: "pre ::text"
+      line_numbers: "span.linenos ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "content"]
+  - type: extract_code
+    field: code_examples
+    preserve_formatting: true
+  - type: parse_datetime
+    field: last_updated
+  - type: join_list
+    field: content
+    separator: "\n\n"
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 5
+  - field: url
+    required: true
+    type: url
+  - field: content
+    required: false
+    min_length: 20
+
+# Scheduling
+schedule:
+  frequency: "weekly"
+  priority: low
+  
+# Metadata
+metadata:
+  category: "documentation"
+  language: "python"
+  version_tracking: true

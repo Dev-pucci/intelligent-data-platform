@@ -1,0 +1,84 @@
+name: "Reddit Programming Threads"
+type: html
+seed_url: "https://www.reddit.com/r/programming/"
+
+# Crawler settings
+url_patterns: ["/r/programming/", "/r/programming/comments/"]
+max_depth: 2
+
+# Parser settings (for HTMLScraper) - Forum/Social structure
+parser_type: css
+parser_config:
+  # Reddit post listing structure
+  container: "div[data-testid='post-container']"
+  fields:
+    title: "h3 ::text"
+    url: "a[data-click-id='body'] ::attr(href)"
+    author: "a[data-testid='post_author_link'] ::text"
+    subreddit: "a[data-click-id='subreddit'] ::text"
+    score: "div[id*='vote-arrows'] ::text"
+    comment_count: "a[data-click-id='comments'] span ::text"
+    post_time: "a[data-testid='post_timestamp'] ::text"
+    flair: "span[data-testid='post-flair'] ::text"
+    awards: "span[id*='awards'] ::text"
+    post_id: "::attr(data-post-id)"
+
+# Thread detail page (comments)
+thread_parser:
+  parser_type: css
+  parser_config:
+    container: "div[data-testid='comment']"
+    fields:
+      comment_author: "a[data-testid='comment_author_link'] ::text"
+      comment_text: "div[data-testid='comment'] p ::text"
+      comment_score: "div[id*='vote-arrows'] ::text"
+      comment_time: "a[data-testid='comment_timestamp'] ::text"
+      reply_count: "button[aria-label*='replies'] ::text"
+      comment_id: "::attr(data-comment-id)"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "comment_text"]
+  - type: extract_number
+    field: score
+  - type: extract_number
+    field: comment_count
+  - type: parse_relative_time
+    field: post_time
+  - type: build_full_url
+    field: url
+    base_url: "https://www.reddit.com"
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 5
+    max_length: 500
+  - field: author
+    required: true
+    pattern: "^[a-zA-Z0-9_-]+$"
+  - field: post_id
+    required: true
+  - field: score
+    required: false
+    type: integer
+
+# Scheduling
+schedule:
+  frequency: "hourly"
+  priority: high
+  
+# Rate limiting (Reddit has strict rate limits)
+rate_limit:
+  requests_per_second: 0.5
+  delay_between_requests: 3
+  respect_robots_txt: true
+  
+# Metadata
+metadata:
+  category: "social_media"
+  platform: "reddit"
+  content_type: "forum_thread"
+  requires_authentication: false

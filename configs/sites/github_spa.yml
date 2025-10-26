@@ -1,0 +1,111 @@
+name: "GitHub Repository Search"
+type: spa
+seed_url: "https://github.com/search?q=machine+learning&type=repositories"
+
+# Crawler settings
+url_patterns: ["/search?", "/trending", "/explore"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "div[data-testid='results-list']"
+scroll: true
+scroll_pause: 2
+max_scroll_attempts: 5
+javascript_enabled: true
+wait_time: 3
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "div.Box-sc-g0xbh4-0"
+  fields:
+    repo_name: "a[data-testid='listbox-item'] ::text"
+    repo_url: "a[data-testid='listbox-item'] ::attr(href)"
+    description: "p.Text-sc-17v1xeu-0 ::text"
+    stars: "span[id*='repo-stars-counter'] ::text"
+    language: "span[itemprop='programmingLanguage'] ::text"
+    updated_at: "relative-time ::attr(datetime)"
+    topics: "a[data-ga-click*='topic'] ::text"
+    fork_count: "a[href*='/forks'] ::text"
+    license: "span.f6 ::text"
+
+# Repository detail page parser
+detail_parser:
+  wait_for: "div[data-pjax-container]"
+  parser_type: css
+  parser_config:
+    container: "div#repository-container-header"
+    fields:
+      full_name: "strong[itemprop='name'] a ::text"
+      owner: "span[itemprop='author'] a ::text"
+      about: "p.f4 ::text"
+      readme_content: "article.markdown-body ::text"
+      contributors_count: "a[href*='/graphs/contributors'] span ::text"
+      commits_count: "span.d-none.d-sm-inline strong ::text"
+      branches_count: "a[href*='/branches'] strong ::text"
+      releases_count: "a[href*='/releases'] span ::text"
+      watchers: "a[href*='/watchers'] span ::text"
+      open_issues: "a[href*='/issues'] span ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["description", "about", "readme_content"]
+  - type: extract_number
+    fields: ["stars", "fork_count", "contributors_count"]
+  - type: parse_datetime
+    field: updated_at
+  - type: build_full_url
+    field: repo_url
+    base_url: "https://github.com"
+  - type: normalize_language
+    field: language
+
+# Validation rules
+validators:
+  - field: repo_name
+    required: true
+    min_length: 1
+    max_length: 100
+  - field: repo_url
+    required: true
+    type: url
+    pattern: "^https://github.com/[^/]+/[^/]+$"
+  - field: stars
+    required: false
+    type: integer
+    min_value: 0
+  - field: language
+    required: false
+
+# Scheduling
+schedule:
+  frequency: "daily"
+  priority: medium
+  
+# Rate limiting (GitHub has API limits)
+rate_limit:
+  requests_per_minute: 30
+  delay_between_requests: 2
+  respect_rate_limit_headers: true
+  
+# API integration option
+api_fallback:
+  enabled: true
+  api_url: "https://api.github.com/search/repositories"
+  api_key_required: false
+  
+# Metadata
+metadata:
+  category: "developer_platform"
+  platform: "github"
+  content_type: "repository"
+  requires_javascript: true

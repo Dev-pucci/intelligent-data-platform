@@ -1,0 +1,18 @@
+name: "Tech Blog (HTML)"
+type: html
+seed_url: "https://techcrunch.com/category/artificial-intelligence/"
+
+# Crawler settings
+url_patterns: ["/202[4-5]/"]
+max_depth: 2
+
+# Parser settings (for HTMLScraper)
+parser_type: xpath
+parser_config:
+  # Using XPath for more robust selection against dynamic class names
+  container: "//article[contains(@class, 'post-block')]"
+  fields:
+    title: ".//h2[contains(@class, 'post-block__title')]/a/text()"
+    url: ".//h2[contains(@class, 'post-block__title')]/a/@href"
+    author: ".//*[contains(@class, 'river-byline__authors')]/a/text()"
+    published_at: ".//time[contains(@class, 'river-byline__time')]/@datetime"

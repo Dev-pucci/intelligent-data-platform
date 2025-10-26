@@ -1,0 +1,263 @@
+name: "Jiji Kenya - Classifieds & Marketplace"
+type: spa
+seed_url: "https://jiji.co.ke/search?query=phones"
+
+# Crawler settings
+url_patterns: ["/search", "/category/", "/phones", "/electronics", "/cars", "/fashion", "/jobs"]
+exclude_patterns: ["/login", "/register", "/account"]
+max_depth: 3
+
+# SPA-specific settings
+wait_for: "div[data-testid='advert-list-item']"
+scroll: true
+scroll_pause: 3
+max_scroll_attempts: 15  # Jiji has infinite scroll
+javascript_enabled: true
+wait_time: 5
+load_more_button: "button[data-testid='load-more']"
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  wait_until: "networkidle2"
+  extra_http_headers:
+    Accept-Language: "en-US,en;q=0.9"
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+
+# Parser settings - Listing page
+parser_type: css
+parser_config:
+  container: "div[data-testid='advert-list-item']"
+  fields:
+    title: "h2[data-testid='advert-title'] ::text"
+    listing_url: "a[data-testid='advert-link'] ::attr(href)"
+    price: "p[data-testid='advert-price'] ::text"
+    location: "p[data-testid='advert-location'] ::text"
+    posted_time: "p[data-testid='advert-date'] ::text"
+    image_url: "img[data-testid='advert-image'] ::attr(src)"
+    seller_name: "p[data-testid='seller-name'] ::text"
+    seller_type: "span[data-testid='seller-badge'] ::text"  # Individual or Business
+    condition: "span[data-testid='item-condition'] ::text"  # New or Used
+    category: "span[data-testid='category-badge'] ::text"
+    featured: "div[data-testid='featured-badge'] ::attr(data-featured)"
+    urgent_sale: "span[data-testid='urgent-badge'] ::text"
+    negotiable: "span[data-testid='negotiable-badge'] ::text"
+
+# Product/Listing detail page parser
+detail_parser:
+  wait_for: "div[data-testid='advert-details']"
+  scroll: true
+  parser_type: css
+  parser_config:
+    container: "div[data-testid='advert-content']"
+    fields:
+      full_title: "h1[data-testid='advert-detail-title'] ::text"
+      full_price: "div[data-testid='advert-price-section'] span ::text"
+      description: "div[data-testid='advert-description'] ::text"
+      seller_name_full: "a[data-testid='seller-profile-link'] ::text"
+      seller_rating: "div[data-testid='seller-rating'] ::text"
+      seller_verified: "span[data-testid='verified-badge'] ::text"
+      seller_member_since: "p[data-testid='member-since'] ::text"
+      seller_phone: "a[data-testid='phone-number'] ::attr(href)"
+      seller_location_detail: "p[data-testid='seller-location'] ::text"
+      listing_id: "span[data-testid='listing-id'] ::text"
+      posted_date: "time[data-testid='posted-date'] ::attr(datetime)"
+      updated_date: "time[data-testid='updated-date'] ::attr(datetime)"
+      views_count: "span[data-testid='views-count'] ::text"
+      images_gallery: "div[data-testid='image-gallery'] img ::attr(src)"
+      category_path: "nav[data-testid='breadcrumb'] a ::text"
+
+      # Specific fields for different categories
+      brand: "div[data-testid='brand'] ::text"
+      model: "div[data-testid='model'] ::text"
+      year: "div[data-testid='year'] ::text"
+      mileage: "div[data-testid='mileage'] ::text"  # For vehicles
+      fuel_type: "div[data-testid='fuel-type'] ::text"
+      transmission: "div[data-testid='transmission'] ::text"
+      color: "div[data-testid='color'] ::text"
+      size: "div[data-testid='size'] ::text"  # For fashion/electronics
+      storage: "div[data-testid='storage'] ::text"  # For phones/electronics
+      ram: "div[data-testid='ram'] ::text"
+      screen_size: "div[data-testid='screen-size'] ::text"
+      operating_system: "div[data-testid='os'] ::text"
+
+      # Property/Real Estate specific
+      bedrooms: "div[data-testid='bedrooms'] ::text"
+      bathrooms: "div[data-testid='bathrooms'] ::text"
+      property_type: "div[data-testid='property-type'] ::text"
+
+      # Job listings specific
+      job_type: "div[data-testid='job-type'] ::text"
+      salary_range: "div[data-testid='salary'] ::text"
+      experience_level: "div[data-testid='experience'] ::text"
+
+# Similar listings parser (recommendations)
+similar_listings_parser:
+  wait_for: "div[data-testid='similar-items']"
+  parser_type: css
+  parser_config:
+    container: "div[data-testid='similar-item-card']"
+    fields:
+      similar_title: "h3 ::text"
+      similar_price: "p[data-testid='price'] ::text"
+      similar_url: "a ::attr(href)"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "description", "full_title"]
+  - type: extract_price
+    fields: ["price", "full_price", "salary_range"]
+    currency: "KSh"
+  - type: extract_number
+    fields: ["views_count", "year", "mileage", "bedrooms", "bathrooms"]
+  - type: build_full_url
+    field: listing_url
+    base_url: "https://jiji.co.ke"
+  - type: extract_phone_number
+    field: seller_phone
+  - type: parse_date
+    fields: ["posted_time", "posted_date", "updated_date"]
+  - type: normalize_location
+    field: location
+    country: "Kenya"
+  - type: extract_storage_size
+    field: storage
+  - type: extract_ram_size
+    field: ram
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 5
+    max_length: 200
+  - field: listing_url
+    required: true
+    type: url
+  - field: price
+    required: false  # Some items might not have price (e.g., free items, jobs)
+    type: decimal
+    min_value: 0
+  - field: seller_name
+    required: true
+    min_length: 2
+  - field: location
+    required: true
+  - field: category
+    required: true
+
+# Scheduling
+schedule:
+  frequency: "every_8_hours"
+  priority: high
+  peak_hours: ["06:00-09:00", "17:00-21:00"]  # Most active posting times
+
+# Rate limiting (Jiji is moderate with rate limits)
+rate_limit:
+  requests_per_minute: 20
+  delay_between_requests: 3
+  max_retries: 4
+  exponential_backoff: true
+  respect_robots_txt: true
+  random_delay_range: [2, 5]  # Random delay between requests
+
+# Regional settings
+regional_config:
+  country: "Kenya"
+  currency: "KSh"
+  language: "en"
+  major_cities:
+    - "Nairobi"
+    - "Mombasa"
+    - "Kisumu"
+    - "Nakuru"
+    - "Eldoret"
+  alternative_sites:
+    - "https://jiji.ng"        # Nigeria
+    - "https://jiji.ug"        # Uganda
+    - "https://jiji.com.gh"    # Ghana
+    - "https://jiji.co.tz"     # Tanzania
+
+# Categories to track
+categories:
+  - "Mobile Phones & Tablets"
+  - "Electronics"
+  - "Vehicles - Cars"
+  - "Vehicles - Motorbikes"
+  - "Property - Houses & Apartments"
+  - "Property - Land"
+  - "Fashion - Clothing"
+  - "Fashion - Shoes"
+  - "Home & Furniture"
+  - "Jobs"
+  - "Services"
+  - "Animals & Pets"
+  - "Business & Industry"
+  - "Sports Equipment"
+  - "Baby Products"
+
+# Search strategies
+search_strategies:
+  - query: "phones samsung"
+    filters:
+      price_min: 5000
+      price_max: 100000
+      condition: "new"
+  - query: "cars toyota"
+    filters:
+      year_min: 2015
+  - query: "apartments nairobi"
+    filters:
+      bedrooms_min: 2
+  - query: "jobs software developer"
+
+# Metadata
+metadata:
+  category: "classifieds"
+  platform: "jiji"
+  region: "africa"
+  content_type: "classified_listings"
+  requires_javascript: true
+  peer_to_peer: true
+  c2c_marketplace: true
+  african_focused: true
+  multi_category: true
+  supports_bargaining: true
+  verification_system: true
+  business_accounts: true
+  free_listings: true
+  premium_listings: true
+
+# Special features
+special_features:
+  - infinite_scroll: true
+  - location_based_search: true
+  - price_negotiation: true
+  - seller_verification: true
+  - featured_listings: true
+  - urgent_sales: true
+  - safe_deal_locations: true
+  - delivery_options: true
+  - secure_payment: false  # Jiji doesn't handle payments directly
+
+# Extraction priorities
+extraction_priorities:
+  high:
+    - "title"
+    - "price"
+    - "location"
+    - "seller_name"
+    - "listing_url"
+  medium:
+    - "description"
+    - "images_gallery"
+    - "posted_time"
+    - "category"
+  low:
+    - "views_count"
+    - "similar_listings"

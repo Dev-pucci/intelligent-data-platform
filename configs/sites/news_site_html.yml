@@ -1,0 +1,17 @@
+name: "Example News Site"
+type: html
+seed_url: "https://www.reuters.com/markets/companies/"
+
+# Crawler settings
+url_patterns: ["/markets/companies/"]
+exclude_patterns: ["/authors/", "/about/"]
+max_depth: 2
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "li.media-story-card"
+  fields:
+    headline: "h3.media-story-card__title a::text"
+    url: "h3.media-story-card__title a::attr(href)"
+    summary: "p.media-story-card__standfirst::text"

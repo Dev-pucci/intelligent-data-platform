@@ -1,0 +1,9 @@
+name: Test Example
+type: html
+seed_url: https://example.com
+parser_type: css
+parser_config:
+  container: body
+  fields:
+    title: h1
+    paragraph: p

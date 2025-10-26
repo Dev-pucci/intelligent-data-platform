@@ -1,0 +1,16 @@
+name: "Company Financials Excel"
+type: excel
+seed_url: "https://www.sec.gov/Archives/edgar/data/12345/00012345-23-000001/Financial_Report.xlsx" # Fictional SEC filing
+
+# Scraper settings
+# The scraper will download the file from the URL.
+
+# Parser settings
+parser_type: excel
+parser_config:
+  sheet_name: "Income Statement"
+  header_row: 5 # Assuming header is on row 6 (0-indexed)
+  columns:
+    - "Revenue"
+    - "Net Income"
+    - "Earnings Per Share"

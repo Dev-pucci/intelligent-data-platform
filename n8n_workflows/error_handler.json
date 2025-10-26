@@ -1,0 +1,149 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "error-trigger"
+      },
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "interval": 5,
+        "unit": "minutes",
+        "retries": 3
+      },
+      "name": "Retry Logic",
+      "type": "n8n-nodes-base.retry",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env[\"API_BASE_URL\"] }}/api/v1/webhooks/trigger/{{ $json.site_name }}",
+        "method": "POST",
+        "jsonBody": true,
+        "authentication": "none",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "job_parameters",
+              "value": {
+                "retry_attempt": "{{ $json.retry_attempt || 1 }}",
+                "original_error": "{{ $json.error }}"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Re-trigger Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "subject": "Scraping Failure Notification",
+        "fromEmail": "n8n@example.com",
+        "toEmail": "admin@example.com",
+        "text": "A scraping job for site {{ $json.site_name }} failed after multiple retries. Error: {{ $json.error }}"
+      },
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1000, 450]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}"
+            }
+          ]
+        }
+      },
+      "name": "Check Retry Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [750, 150]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "url": "{{ $env[\"API_BASE_URL\"] }}/api/v1/health"
+      },
+      "name": "API Health Check (Placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 150]
+    }
+  ],
+  "connections": {
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "node": "Retry Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Logic": {
+      "main": [
+        [
+          {
+            "node": "Re-trigger Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "retry": [
+        [
+          {
+            "node": "Re-trigger Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-trigger Scrape": {
+      "main": [
+        [
+          {
+            "node": "Check Retry Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Success": {
+      "main": [
+        [
+          {
+            "node": "API Health Check (Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Error Handler with Retry Logic",
+  "timezone": "Europe/Berlin"
+}

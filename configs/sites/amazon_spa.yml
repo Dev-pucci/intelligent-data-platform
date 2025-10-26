@@ -1,0 +1,178 @@
+name: "Amazon Product Search (SPA)"
+type: spa
+seed_url: "https://www.amazon.com/s?k=electronics"
+
+# Crawler settings
+url_patterns: ["/s?", "/dp/", "/gp/product/", "/gp/offer-listing/"]
+max_depth: 3
+
+# SPA-specific settings
+wait_for: "div[data-component-type='s-search-result']"
+scroll: true
+scroll_pause: 3
+max_scroll_attempts: 5
+javascript_enabled: true
+wait_time: 4
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  wait_until: "domcontentloaded"
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "div[data-component-type='s-search-result']"
+  fields:
+    title: "h2 a span ::text"
+    url: "h2 a ::attr(href)"
+    price: "span.a-price span.a-offscreen ::text"
+    original_price: "span.a-text-price span.a-offscreen ::text"
+    discount_percentage: "span.s-coupon-percentage-chip ::text"
+    rating: "span.a-icon-alt ::text"
+    review_count: "span[aria-label*='stars'] + span ::text"
+    image_url: "img.s-image ::attr(src)"
+    prime_eligible: "i.a-icon-prime ::attr(aria-label)"
+    brand: "span.a-size-base-plus ::text"
+    asin: "::attr(data-asin)"
+    availability: "span.a-color-success ::text"
+    deal_badge: "span.a-badge-text ::text"
+
+# Product detail page parser
+detail_parser:
+  wait_for: "div#dp-container"
+  scroll: true
+  parser_type: css
+  parser_config:
+    container: "div#dp"
+    fields:
+      full_title: "span#productTitle ::text"
+      full_price: "span.a-price.aok-align-center span.a-offscreen ::text"
+      full_description: "div#feature-bullets ul li span ::text"
+      product_details: "div#detailBullets_feature_div span ::text"
+      specifications: "table.prodDetTable tr ::text"
+      availability_detail: "div#availability span ::text"
+      seller_name: "a#sellerProfileTriggerId ::text"
+      ships_from: "span:contains('Ships from') + span ::text"
+      sold_by: "span:contains('Sold by') + span ::text"
+      images: "div#altImages img ::attr(src)"
+      videos: "div#video-block ::attr(data-video-url)"
+      color_options: "ul.a-unordered-list.a-nostyle.a-button-list li ::attr(data-defaultasin)"
+      size_options: "select#native_dropdown_selected_size_name option ::text"
+      warranty: "div#warranty ::text"
+      return_policy: "div#returns-policy ::text"
+
+# Customer reviews parser
+reviews_parser:
+  wait_for: "div[data-hook='review']"
+  parser_type: css
+  parser_config:
+    container: "div[data-hook='review']"
+    fields:
+      reviewer_name: "span.a-profile-name ::text"
+      review_rating: "i[data-hook='review-star-rating'] span ::text"
+      review_title: "a[data-hook='review-title'] span ::text"
+      review_text: "span[data-hook='review-body'] span ::text"
+      review_date: "span[data-hook='review-date'] ::text"
+      verified_purchase: "span[data-hook='avp-badge'] ::text"
+      helpful_count: "span[data-hook='helpful-vote-statement'] ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "full_description"]
+  - type: extract_price
+    fields: ["price", "original_price", "full_price"]
+  - type: extract_number
+    fields: ["rating", "review_count", "discount_percentage"]
+  - type: build_full_url
+    field: url
+    base_url: "https://www.amazon.com"
+  - type: extract_asin
+    field: asin
+  - type: join_list
+    field: full_description
+    separator: "\n"
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 10
+    max_length: 500
+  - field: asin
+    required: true
+    pattern: "^[A-Z0-9]{10}$"
+  - field: price
+    required: false
+    type: decimal
+    min_value: 0
+  - field: rating
+    required: false
+    type: decimal
+    min_value: 0
+    max_value: 5
+
+# Scheduling
+schedule:
+  frequency: "every_6_hours"
+  priority: high
+  
+# Rate limiting (Amazon is strict about scraping)
+rate_limit:
+  requests_per_minute: 10
+  delay_between_requests: 6
+  max_retries: 3
+  exponential_backoff: true
+  respect_robots_txt: true
+  
+# Regional settings
+regional_config:
+  primary_region: "United States"
+  currency: "USD"
+  language: "en"
+  alternative_marketplaces:
+    - "https://www.amazon.co.uk"      # UK
+    - "https://www.amazon.de"         # Germany
+    - "https://www.amazon.fr"         # France
+    - "https://www.amazon.co.jp"      # Japan
+    - "https://www.amazon.in"         # India
+    - "https://www.amazon.ca"         # Canada
+    - "https://www.amazon.com.au"     # Australia
+    - "https://www.amazon.com.mx"     # Mexico
+
+# Categories to track
+categories:
+  - "Electronics"
+  - "Computers"
+  - "Home & Kitchen"
+  - "Clothing & Accessories"
+  - "Books"
+  - "Toys & Games"
+  - "Sports & Outdoors"
+  - "Health & Personal Care"
+  - "Automotive"
+  - "Tools & Home Improvement"
+
+# Anti-bot detection strategies
+anti_detection:
+  rotate_user_agents: true
+  random_delays: true
+  cookies_handling: true
+  session_rotation: true
+  proxy_rotation: false  # Enable if you have proxies
+
+# Metadata
+metadata:
+  category: "e-commerce"
+  platform: "amazon"
+  region: "global"
+  content_type: "product_listing"
+  requires_javascript: true
+  anti_scraping_measures: "high"
+  captcha_possible: true
+  prime_program: true

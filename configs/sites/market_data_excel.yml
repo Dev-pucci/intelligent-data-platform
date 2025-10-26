@@ -1,0 +1,19 @@
+name: "Market Data (Excel/CSV)"
+type: excel
+seed_url: "https://data.nasdaq.com/api/v3/datasets/WIKI/AAPL.csv"
+
+# Scraper settings
+# The scraper will download the file from the URL.
+
+# Parser settings
+parser_type: excel # Assuming a dedicated excel parser
+parser_config:
+  sheet_name: 0 # Use the first sheet
+  header_row: 0 # The header is in the first row
+  columns: # List of columns to extract
+    - "Date"
+    - "Open"
+    - "High"
+    - "Low"
+    - "Close"
+    - "Volume"

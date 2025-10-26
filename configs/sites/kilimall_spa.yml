@@ -1,0 +1,173 @@
+11me: "Kilimall Kenya - E-commerce"
+type: spa
+seed_url: "https://www.kilimall.co.ke/new/search?keyword=phones"
+
+# Crawler settings
+url_patterns: ["/new/search", "/new/goods/", "/new/shop/"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "div.goods-item"
+scroll: true
+scroll_pause: 4
+max_scroll_attempts: 10
+javascript_enabled: true
+wait_time: 5
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  wait_until: "networkidle2"
+
+pagination:
+  type: "click"
+  next_button_selector: ".ant-pagination-next a"
+  max_pages: 5
+  delay: 2
+
+# --- Other Pagination Examples ---
+# pagination:
+#   type: "scroll"
+#   max_pages: 10 # Max number of scrolls
+#   delay: 3
+
+# pagination:
+#   type: "url_pattern"
+#   url_pattern: "https://www.kilimall.co.ke/new/search?keyword=phones&page={page_num}"
+#   max_pages: 5
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "div.goods-item"
+  fields:
+    product_name: "div.goods-name ::text"
+    product_url: "a.goods-link ::attr(href)"
+    price: "span.goods-price ::text"
+    original_price: "span.original-price ::text"
+    discount_tag: "div.discount-tag ::text"
+    rating: "div.rating-stars ::attr(data-rating)"
+    reviews_count: "span.review-count ::text"
+    image_url: "img.goods-img ::attr(data-src)"
+    sold_count: "span.sold-count ::text"
+    free_shipping: "span.free-shipping ::text"
+    flash_sale: "div.flash-sale-tag ::text"
+    store_name: "div.store-name ::text"
+
+# Product detail page parser
+detail_parser:
+  wait_for: "div.product-detail-container"
+  scroll: true
+  parser_type: css
+  parser_config:
+    container: "div.product-main"
+    fields:
+      full_title: "h1.product-title ::text"
+      current_price: "span.current-price ::text"
+      original_price: "span.market-price ::text"
+      product_description: "div.product-description ::text"
+      specifications: "div.specs-table tr ::text"
+      product_features: "ul.features-list li ::text"
+      sku_id: "span.sku-id ::text"
+      brand: "div.brand-name ::text"
+      seller_info: "div.seller-card ::text"
+      seller_rating: "div.seller-rating ::text"
+      stock_quantity: "span.stock-status ::text"
+      delivery_time: "div.delivery-info ::text"
+      warranty_info: "div.warranty-section ::text"
+      return_policy: "div.return-policy ::text"
+      image_gallery: "div.image-gallery img ::attr(src)"
+      color_variants: "div.color-option ::attr(data-color)"
+      size_variants: "select.size-select option ::text"
+
+# Reviews parser
+reviews_parser:
+  wait_for: "div.review-item"
+  parser_type: css
+  parser_config:
+    container: "div.review-item"
+    fields:
+      reviewer_name: "span.reviewer-name ::text"
+      review_rating: "div.review-stars ::attr(data-rating)"
+      review_title: "div.review-title ::text"
+      review_content: "div.review-content ::text"
+      review_date: "span.review-date ::text"
+      verified_buyer: "span.verified-badge ::text"
+      helpful_count: "span.helpful-count ::text"
+      review_images: "div.review-images img ::attr(src)"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["product_name", "product_description"]
+  - type: extract_price
+    fields: ["price", "original_price", "current_price"]
+    currency: "KSh"
+  - type: extract_number
+    fields: ["rating", "reviews_count", "sold_count", "stock_quantity"]
+  - type: build_full_url
+    field: product_url
+    base_url: "https://www.kilimall.co.ke"
+  - type: parse_percentage
+    field: discount_tag
+
+# Validation rules
+validators:
+  - field: product_name
+    required: true
+    min_length: 5
+    max_length: 300
+  - field: product_url
+    required: true
+    type: url
+  - field: price
+    required: false
+    type: decimal
+    min_value: 0
+  - field: rating
+    required: false
+    type: decimal
+    min_value: 0
+    max_value: 5
+
+# Scheduling
+schedule:
+  frequency: "every_12_hours"
+  priority: high
+  
+# Rate limiting
+rate_limit:
+  requests_per_minute: 12
+  delay_between_requests: 5
+  max_retries: 3
+  exponential_backoff: true
+  
+# Regional settings
+regional_config:
+  country: "Kenya"
+  currency: "KSh"
+  language: "en"
+  alternative_sites:
+    - "https://www.kilimall.co.ug"  # Uganda
+    - "https://www.kilimall.com.ng"  # Nigeria
+  
+# Categories to track
+categories:
+  - "Electronics"
+  - "Fashion"
+  - "Home & Garden"
+  - "Phones & Tablets"
+  - "Sports & Outdoors"
+  
+# Metadata
+metadata:
+  category: "e-commerce"
+  platform: "kilimall"
+  region: "africa"
+  content_type: "product_listing"
+  requires_javascript: true
+  chinese_backed: true

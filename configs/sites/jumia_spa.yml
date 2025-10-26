@@ -1,0 +1,157 @@
+name: "Jumia Kenya - E-commerce"
+type: spa
+seed_url: "https://www.jumia.co.ke/catalog/?q=electronics"
+
+# Crawler settings
+url_patterns: ["/catalog/", "/mlp-", "/-sku"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "article.prd"
+scroll: true
+scroll_pause: 3
+max_scroll_attempts: 8
+javascript_enabled: true
+wait_time: 4
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  wait_until: "networkidle0"
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "article.prd"
+  fields:
+    product_name: "h3.name ::text"
+    product_url: "a.core ::attr(href)"
+    price: "div.prc ::text"
+    original_price: "div.old ::text"
+    discount: "div.bdg._dsct ::text"
+    rating: "div.stars._s ::text"
+    review_count: "div.rev ::text"
+    image_url: "img.img ::attr(data-src)"
+    brand: "span.brand ::text"
+    express_delivery: "div.bdg._express ::text"
+    official_store: "div.bdg._official ::text"
+    sold_count: "div._sold ::text"
+
+# Product detail page parser
+detail_parser:
+  wait_for: "div.-paxs"
+  scroll: true
+  parser_type: css
+  parser_config:
+    container: "div.row.-pas"
+    fields:
+      full_name: "h1.-fs20 ::text"
+      full_price: "span.-b ::text"
+      full_description: "div.-pvs ::text"
+      specifications: "ul.key-feat li ::text"
+      product_details: "div.-hr li ::text"
+      sku: "div.-hr li:contains('SKU') ::text"
+      seller_name: "a.-df ::text"
+      seller_score: "div.stars ::text"
+      delivery_info: "div.-df p ::text"
+      warranty: "div.-df:contains('Warranty') ::text"
+      return_policy: "a:contains('Return Policy') ::text"
+      stock_status: "p.-fs14 ::text"
+      images_gallery: "div.itm img ::attr(src)"
+
+# Customer reviews parser
+reviews_parser:
+  wait_for: "article.-pam"
+  parser_type: css
+  parser_config:
+    container: "article.-pam"
+    fields:
+      reviewer_name: "h3.-m ::text"
+      review_rating: "div.stars._m ::text"
+      review_text: "p ::text"
+      review_date: "div.-fs12 ::text"
+      verified_purchase: "div.-pvxs ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["product_name", "full_description"]
+  - type: extract_price
+    fields: ["price", "original_price", "full_price"]
+    currency: "KSh"
+  - type: extract_number
+    fields: ["rating", "review_count", "discount", "sold_count"]
+  - type: build_full_url
+    field: product_url
+    base_url: "https://www.jumia.co.ke"
+  - type: parse_percentage
+    field: discount
+
+# Validation rules
+validators:
+  - field: product_name
+    required: true
+    min_length: 5
+    max_length: 300
+  - field: product_url
+    required: true
+    type: url
+  - field: price
+    required: false
+    type: decimal
+    min_value: 0
+  - field: rating
+    required: false
+    type: decimal
+    min_value: 0
+    max_value: 5
+
+# Scheduling
+schedule:
+  frequency: "every_12_hours"
+  priority: high
+  
+# Rate limiting
+rate_limit:
+  requests_per_minute: 15
+  delay_between_requests: 4
+  max_retries: 3
+  
+# Regional settings
+regional_config:
+  country: "Kenya"
+  currency: "KSh"
+  language: "en"
+  alternative_sites:
+    - "https://www.jumia.com.ng"  # Nigeria
+    - "https://www.jumia.co.ug"   # Uganda
+    - "https://www.jumia.com.eg"  # Egypt
+    - "https://www.jumia.co.za"   # South Africa
+  
+# Categories to track
+categories:
+  - "Electronics"
+  - "Fashion & Beauty"
+  - "Home & Office"
+  - "Phones & Tablets"
+  - "Computing"
+  - "Appliances"
+  - "Baby Products"
+  - "Gaming"
+  - "Sporting Goods"
+  - "Automobile"
+
+# Metadata
+metadata:
+  category: "e-commerce"
+  platform: "jumia"
+  region: "africa"
+  content_type: "product_listing"
+  requires_javascript: true
+  mobile_app_available: true
+  african_leader: true
+  flash_sales: true

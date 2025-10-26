@@ -1,0 +1,52 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "every",
+        "value": "24",
+        "unit": "hours"
+      },
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env[\"API_BASE_URL\"] }}/api/v1/webhooks/trigger/ExampleSite",
+        "method": "POST",
+        "jsonBody": true,
+        "authentication": "none",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "job_parameters",
+              "value": {
+                "start_time": "{{ $now() }}"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Trigger Scrape API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Trigger Scrape API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Daily Scheduled Scraping Pipeline",
+  "timezone": "Europe/Berlin"
+}

@@ -1,0 +1,43 @@
+name: "BBC News - Technology"
+type: html
+seed_url: "https://www.bbc.com/news/technology"
+
+# Crawler settings
+url_patterns: ["/news/technology", "/news/articles/"]
+max_depth: 2
+
+# Parser settings (for HTMLScraper)
+parser_type: css
+parser_config:
+  # BBC News uses a consistent article structure
+  container: "article[data-testid='liverpool-article']"
+  fields:
+    title: "h1[data-testid='headline'] ::text"
+    description: "div[data-component='text-block'] p ::text"
+    published_at: "time ::attr(datetime)"
+    url: "::attr(data-article-id)"
+    category: "nav[aria-label='Breadcrumb'] a ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "description"]
+  - type: validate_url
+    field: url
+  - type: parse_datetime
+    field: published_at
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 10
+    max_length: 200
+  - field: published_at
+    required: false
+    type: datetime
+
+# Scheduling
+schedule:
+  frequency: "hourly"
+  priority: high

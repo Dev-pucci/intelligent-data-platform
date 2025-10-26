@@ -1,0 +1,81 @@
+{
+  "name": "Manual Test Scraper",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd \"c:\\Users\\PUCCI\\Desktop\\gem\\intelligent-data-platform\" && python test_full_pipeline.py",
+        "options": {}
+      },
+      "id": "run-test-pipeline",
+      "name": "Run Test Pipeline",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM scraped_data ORDER BY created_at DESC LIMIT 10;",
+        "options": {}
+      },
+      "id": "fetch-latest-data",
+      "name": "Fetch Latest Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [690, 300],
+      "credentials": {
+        "postgres": {
+          "id": "scraper_db_credentials",
+          "name": "Scraper Database"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Test Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Test Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Fetch Latest Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "manual-test-scraper",
+  "meta": {
+    "instanceId": "local"
+  },
+  "tags": [
+    {
+      "name": "testing",
+      "id": "1"
+    }
+  ]
+}

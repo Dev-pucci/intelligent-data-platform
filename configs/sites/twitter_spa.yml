@@ -1,0 +1,89 @@
+name: "Twitter/X Feed"
+type: spa
+seed_url: "https://twitter.com/search?q=AI%20programming&f=live"
+
+# Crawler settings
+url_patterns: ["/search?q=", "/status/", "/i/"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "article[data-testid='tweet']"
+scroll: true
+scroll_pause: 2
+max_scroll_attempts: 5
+javascript_enabled: true
+wait_time: 3
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "article[data-testid='tweet']"
+  fields:
+    tweet_text: "div[data-testid='tweetText'] ::text"
+    author_name: "div[data-testid='User-Name'] span ::text"
+    author_handle: "div[data-testid='User-Name'] a ::attr(href)"
+    timestamp: "time ::attr(datetime)"
+    retweet_count: "button[data-testid='retweet'] span ::text"
+    like_count: "button[data-testid='like'] span ::text"
+    reply_count: "button[data-testid='reply'] span ::text"
+    tweet_url: "a[href*='/status/'] ::attr(href)"
+    media_urls: "div[data-testid='tweetPhoto'] img ::attr(src)"
+    hashtags: "a[href*='/hashtag/'] ::text"
+    mentions: "a[href^='/'] ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["tweet_text"]
+  - type: extract_number
+    fields: ["retweet_count", "like_count", "reply_count"]
+  - type: parse_datetime
+    field: timestamp
+  - type: build_full_url
+    field: tweet_url
+    base_url: "https://twitter.com"
+  - type: extract_handle
+    field: author_handle
+
+# Validation rules
+validators:
+  - field: tweet_text
+    required: true
+    min_length: 1
+    max_length: 500
+  - field: author_handle
+    required: true
+    pattern: "^@?[a-zA-Z0-9_]+$"
+  - field: timestamp
+    required: true
+    type: datetime
+
+# Scheduling
+schedule:
+  frequency: "every_30_minutes"
+  priority: high
+  
+# Rate limiting (Twitter is strict)
+rate_limit:
+  requests_per_minute: 20
+  delay_between_requests: 3
+  
+# Authentication (optional, for higher limits)
+authentication:
+  type: bearer_token
+  required: false
+  
+# Metadata
+metadata:
+  category: "social_media"
+  platform: "twitter"
+  content_type: "microblog"
+  requires_javascript: true

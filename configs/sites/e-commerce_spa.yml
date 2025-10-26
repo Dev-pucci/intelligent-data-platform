@@ -1,0 +1,19 @@
+name: "E-commerce (SPA)"
+type: spa
+seed_url: "https://www.bestbuy.com/site/searchpage.jsp?st=laptop"
+
+# Crawler settings
+url_patterns: ["/site/"]
+max_depth: 2
+
+# Scraper settings (for SPAScraper)
+wait_for: ".sku-item"
+scroll: true
+
+# Parser settings
+parser_type: ai
+parser_config:
+  model: "deepseek-coder:1.3b" # Or any other suitable model available in Ollama
+  prompt_template: "Extract the product name, price, and rating from the following product listing HTML. Return the data as a JSON object with keys 'product_name', 'price', and 'rating'. HTML: {text}"
+  fields: ["product_name", "price", "rating"]
+  # The 'container' selector from the scraper config will determine what HTML chunk is passed to the AI.

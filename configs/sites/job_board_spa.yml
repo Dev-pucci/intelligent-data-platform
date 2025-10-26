@@ -1,0 +1,21 @@
+name: "Job Board SPA"
+type: spa
+seed_url: "https://www.indeed.com/jobs?q=software+engineer"
+
+# Crawler settings
+url_patterns: ["/viewjob?jk="]
+max_depth: 1
+
+# Scraper settings
+wait_for: ".jobsearch-JobComponent"
+scroll: true
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: ".jobsearch-JobComponent"
+  fields:
+    job_title: "h1.jobsearch-JobInfoHeader-title::text"
+    company_name: "div.jobsearch-CompanyInfoContainer a::text"
+    location: "div.jobsearch-CompanyInfoContainer div:nth-child(2)::text"
+    job_description: "#jobDescriptionText::text"

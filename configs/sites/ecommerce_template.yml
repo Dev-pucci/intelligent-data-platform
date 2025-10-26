@@ -1,0 +1,72 @@
+# intelligent-data-platform/configs/sites/ecommerce_template.yml
+
+# --- General Site Information ---
+name: "E-commerce Site Name" # Unique name for the e-commerce site
+type: spa # or 'html' if it's a static site, 'api' if it's an API-driven store
+seed_url: "https://example.com/products" # Starting URL for the crawler/scraper
+
+# --- Crawler Settings (Optional) ---
+# Configure how the crawler discovers new product pages or categories.
+crawler_settings:
+  url_patterns: # List of regex patterns for URLs to include (e.g., product detail pages)
+    - "/products/[a-zA-Z0-9-]+$"
+    - "/category/[a-zA-Z0-9-]+$"
+  exclude_patterns: # List of regex patterns for URLs to exclude (e.g., login, cart)
+    - "/cart"
+    - "/checkout"
+    - "/login"
+  max_depth: 2 # Maximum depth the crawler should go from the seed URL
+
+# --- Scraper Settings ---
+# Configure how the scraper interacts with the page to get raw content.
+scraper_settings:
+  wait_for: ".product-item" # CSS selector to wait for before scraping (crucial for SPA sites)
+  scroll: true # Set to true if the page loads content dynamically on scroll (for SPA sites)
+  # headers: # Optional: HTTP headers for API scrapers or specific sites
+  #   User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+  #   Authorization: "Bearer YOUR_API_TOKEN"
+
+# --- Parser Settings ---
+# Configure how structured data is extracted from the raw content.
+parser_type: css # or 'xpath', 'ai', 'json' (for API responses)
+parser_config:
+  container: ".product-card" # CSS/XPath selector for the main element containing a single product's data
+  fields: # Define fields to extract and their selectors/expressions
+    product_name: "h2.product-title::text" # CSS selector for product name
+    price: ".product-price::text" # CSS selector for product price
+    currency: ".product-price::attr(data-currency)" # Extract attribute for currency
+    product_url: "a.product-link::attr(href)" # URL to the product detail page
+    image_url: ".product-image img::attr(src)" # URL of the product image
+    description: ".product-description::text" # Short description
+    # For AI Parser:
+    # description_summary:
+    #   parser_type: ai
+    #   model: "deepseek-coder:1.3b"
+    #   prompt_template: "Summarize the following product description: {text}"
+    #   source_selector: ".product-description" # Selector to get text to pass to AI
+
+# --- Transformation Rules (Optional) ---
+# Apply cleaning, normalization, and type conversion to extracted fields.
+transformations:
+  price:
+    - strip: "$" # Remove currency symbol
+    - replace: {old: ",", new: ""} # Remove thousands separator
+    - convert: float # Convert to a floating-point number
+  product_name:
+    - clean_whitespace: true # Remove extra spaces
+  product_url:
+    - prepend_base_url: "https://example.com" # Prepend base URL if relative
+
+# --- Validation Rules (Optional) ---
+# Define rules to ensure data quality.
+validation_rules:
+  product_name:
+    required: true
+    min_length: 5
+  price:
+    required: true
+    type: float
+    min_value: 0.01
+  product_url:
+    required: true
+    regex: "^https?://" # Ensure it's a valid URL

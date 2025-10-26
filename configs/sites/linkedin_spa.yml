@@ -1,0 +1,104 @@
+name: "LinkedIn Job Listings"
+type: spa
+seed_url: "https://www.linkedin.com/jobs/search/?keywords=software%20engineer"
+
+# Crawler settings
+url_patterns: ["/jobs/", "/jobs/view/", "/company/"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "div.jobs-search__results-list"
+scroll: true
+scroll_pause: 3
+max_scroll_attempts: 10
+javascript_enabled: true
+wait_time: 4
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  cookies_required: true
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "div.base-card"
+  fields:
+    job_title: "h3.base-search-card__title ::text"
+    company_name: "h4.base-search-card__subtitle ::text"
+    location: "span.job-search-card__location ::text"
+    posted_date: "time.job-search-card__listdate ::attr(datetime)"
+    job_url: "a.base-card__full-link ::attr(href)"
+    seniority_level: "span.job-details-jobs-unified-top-card__job-insight ::text"
+    employment_type: "span.job-details-jobs-unified-top-card__job-insight ::text"
+    industry: "span.job-details-jobs-unified-top-card__job-insight ::text"
+
+# Job detail page parser
+detail_parser:
+  wait_for: "div.job-details-jobs-unified-top-card"
+  parser_type: css
+  parser_config:
+    container: "div.jobs-unified-top-card"
+    fields:
+      full_description: "div.jobs-description__content ::text"
+      company_size: "span.jobs-unified-top-card__company-info ::text"
+      applicant_count: "span.jobs-unified-top-card__applicant-count ::text"
+      skills_required: "div.job-details-skill-match-status-list li ::text"
+      salary_range: "span.job-details-jobs-unified-top-card__job-insight-view-model-secondary ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["job_title", "full_description", "company_name"]
+  - type: trim_whitespace
+    fields: ["location", "seniority_level"]
+  - type: parse_datetime
+    field: posted_date
+  - type: extract_number
+    field: applicant_count
+  - type: build_full_url
+    field: job_url
+    base_url: "https://www.linkedin.com"
+
+# Validation rules
+validators:
+  - field: job_title
+    required: true
+    min_length: 5
+    max_length: 200
+  - field: company_name
+    required: true
+  - field: location
+    required: false
+  - field: job_url
+    required: true
+    type: url
+
+# Scheduling
+schedule:
+  frequency: "every_2_hours"
+  priority: high
+  
+# Rate limiting (LinkedIn is protective)
+rate_limit:
+  requests_per_minute: 10
+  delay_between_requests: 6
+  max_retries: 3
+  
+# Authentication (recommended for LinkedIn)
+authentication:
+  type: session_cookies
+  required: true
+  login_url: "https://www.linkedin.com/login"
+  
+# Metadata
+metadata:
+  category: "job_board"
+  platform: "linkedin"
+  content_type: "job_listing"
+  requires_javascript: true
+  requires_login: true

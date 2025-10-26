@@ -1,0 +1,78 @@
+# Render Blueprint for Intelligent Data Acquisition Platform
+# This file tells Render.com how to deploy your application
+
+services:
+  # n8n Workflow Automation
+  - type: web
+    name: intelligent-data-platform-n8n
+    env: node
+    plan: free
+    region: oregon  # Change to your preferred region
+    buildCommand: npm install
+    startCommand: npx n8n start
+    healthCheckPath: /
+    envVars:
+      # n8n Configuration
+      - key: N8N_PORT
+        value: 10000
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_HOST
+        fromService:
+          type: web
+          name: intelligent-data-platform-n8n
+          property: host
+      - key: WEBHOOK_URL
+        fromService:
+          type: web
+          name: intelligent-data-platform-n8n
+          property: host
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true  # Render generates random key
+
+      # Database Connection (auto-filled from database service)
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: scraper-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: scraper-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: scraper-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: scraper-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: scraper-db
+          property: password
+
+      # Optional: Basic Auth (uncomment to enable)
+      # - key: N8N_BASIC_AUTH_ACTIVE
+      #   value: true
+      # - key: N8N_BASIC_AUTH_USER
+      #   value: admin
+      # - key: N8N_BASIC_AUTH_PASSWORD
+      #   sync: false  # Set manually in Render dashboard
+
+      # Optional: Gemini API
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: GEMINI_MODEL
+        value: gemini-pro
+
+databases:
+  # PostgreSQL Database (Free for 90 days)
+  - name: scraper-db
+    databaseName: scraper_db
+    user: scraper_user
+    plan: free  # Free for 90 days, then $7/month
+    region: oregon  # Same region as web service
+    ipAllowList: []  # Allow connections from anywhere

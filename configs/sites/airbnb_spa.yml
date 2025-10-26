@@ -1,0 +1,133 @@
+name: "Airbnb Property Listings"
+type: spa
+seed_url: "https://www.airbnb.com/s/New-York/homes"
+
+# Crawler settings
+url_patterns: ["/s/", "/rooms/", "/experiences/"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "div[data-testid='card-container']"
+scroll: true
+scroll_pause: 4
+max_scroll_attempts: 10
+javascript_enabled: true
+wait_time: 5
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  wait_until: "networkidle2"
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "div[itemprop='itemListElement']"
+  fields:
+    property_name: "div[data-testid='listing-card-title'] ::text"
+    property_url: "a[data-testid='card-link'] ::attr(href)"
+    price_per_night: "span._tyxjp1 ::text"
+    rating: "span[aria-label*='rating'] ::text"
+    review_count: "span.r1dxllyb ::text"
+    property_type: "span._1rtrkfv ::text"
+    location: "span[data-testid='listing-card-subtitle'] ::text"
+    image_url: "img[data-original-uri] ::attr(src)"
+    host_name: "span._1f1oir5 ::text"
+    superhost_badge: "div[aria-label='Superhost'] ::text"
+
+# Property detail page parser
+detail_parser:
+  wait_for: "div[data-section-id='OVERVIEW_DEFAULT']"
+  parser_type: css
+  parser_config:
+    container: "div._1h34cgb"
+    fields:
+      full_title: "h1._fecoyn4 ::text"
+      full_description: "span._1d2xzms ::text"
+      bedrooms: "span:contains('bedroom') ::text"
+      beds: "span:contains('bed') ::text"
+      bathrooms: "span:contains('bathroom') ::text"
+      amenities: "div[data-section-id='AMENITIES'] button ::text"
+      house_rules: "div[data-section-id='POLICIES'] ::text"
+      cancellation_policy: "div._1udvvzg ::text"
+      check_in_time: "div._pd8gea ::text"
+      check_out_time: "div._pd8gea ::text"
+      minimum_nights: "span:contains('night minimum') ::text"
+      max_guests: "span:contains('guests') ::text"
+      host_response_rate: "span:contains('response rate') ::text"
+      host_response_time: "span:contains('response time') ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["property_name", "full_description"]
+  - type: extract_price
+    field: price_per_night
+  - type: extract_number
+    fields: ["rating", "review_count", "bedrooms", "beds", "bathrooms"]
+  - type: build_full_url
+    field: property_url
+    base_url: "https://www.airbnb.com"
+  - type: parse_location
+    field: location
+
+# Validation rules
+validators:
+  - field: property_name
+    required: true
+    min_length: 5
+    max_length: 300
+  - field: property_url
+    required: true
+    type: url
+  - field: price_per_night
+    required: false
+    type: decimal
+    min_value: 0
+  - field: rating
+    required: false
+    type: decimal
+    min_value: 0
+    max_value: 5
+
+# Scheduling
+schedule:
+  frequency: "every_12_hours"
+  priority: medium
+  
+# Rate limiting (Airbnb is strict)
+rate_limit:
+  requests_per_minute: 10
+  delay_between_requests: 6
+  max_retries: 3
+  exponential_backoff: true
+  
+# Geolocation support
+geolocation:
+  enabled: true
+  locations:
+    - "New York, USA"
+    - "Los Angeles, USA"
+    - "San Francisco, USA"
+    - "London, UK"
+    - "Paris, France"
+  
+# Filter options
+search_filters:
+  price_min: 50
+  price_max: 500
+  check_in_date: "+7days"
+  check_out_date: "+14days"
+  guests: 2
+  
+# Metadata
+metadata:
+  category: "real_estate"
+  platform: "airbnb"
+  content_type: "property_listing"
+  requires_javascript: true
+  dynamic_pricing: true

@@ -1,0 +1,24 @@
+{
+  "name": "intelligent-data-platform",
+  "version": "1.0.0",
+  "description": "The Intelligent Data Acquisition Platform is a robust, automated system designed for web scraping and data acquisition. It intelligently crawls websites, extracts structured and unstructured data, processes it using AI and rule-based transformations, stores it in PostgreSQL, and provides API access. The entire system is orchestrated with n8n and monitored via Grafana and Prometheus.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "n8n start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "n8n": "^1.116.2"
+  }
+}

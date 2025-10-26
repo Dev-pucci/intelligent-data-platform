@@ -1,0 +1,183 @@
+{
+  "name": "Scheduled Scraping Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "webhookId": ""
+    },
+    {
+      "parameters": {
+        "command": "cd \"c:\\Users\\PUCCI\\Desktop\\gem\\intelligent-data-platform\" && python test_full_pipeline.py",
+        "options": {}
+      },
+      "id": "execute-scraper",
+      "name": "Execute Scraper",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse the scraper output\nconst output = items[0].json.stdout;\nconst errors = items[0].json.stderr;\n\n// Extract success indicators\nconst success = output.includes('SUCCESS') || output.includes('PASSED');\nconst itemsScraped = (output.match(/scraped (\\d+)/i) || [0, 0])[1];\nconst itemsInserted = (output.match(/inserted (\\d+)/i) || [0, 0])[1];\n\n// Return structured result\nreturn [\n  {\n    json: {\n      timestamp: new Date().toISOString(),\n      success: success,\n      items_scraped: parseInt(itemsScraped) || 0,\n      items_inserted: parseInt(itemsInserted) || 0,\n      output: output,\n      errors: errors || null,\n      status: success ? 'completed' : 'failed'\n    }\n  }\n];"
+      },
+      "id": "parse-results",
+      "name": "Parse Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) as total_records, \n       MAX(created_at) as latest_record,\n       COUNT(DISTINCT source_url) as unique_urls\nFROM scraped_data\nWHERE created_at >= NOW() - INTERVAL '1 hour';",
+        "options": {}
+      },
+      "id": "verify-database",
+      "name": "Verify Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [910, 300],
+      "credentials": {
+        "postgres": {
+          "id": "scraper_db_credentials",
+          "name": "Scraper Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.status}}",
+              "operation": "equals",
+              "value2": "completed"
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1130, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Success notification\nconst scraperData = items[0].json;\nconst dbData = items[1].json;\n\nreturn [\n  {\n    json: {\n      notification_type: 'success',\n      title: 'Scraping Job Completed Successfully',\n      message: `Scraped ${scraperData.items_scraped} items\\nInserted ${scraperData.items_inserted} records\\nDatabase now has ${dbData.total_records} records from last hour`,\n      timestamp: scraperData.timestamp,\n      metrics: {\n        items_scraped: scraperData.items_scraped,\n        items_inserted: scraperData.items_inserted,\n        db_records: dbData.total_records,\n        unique_urls: dbData.unique_urls\n      }\n    }\n  }\n];"
+      },
+      "id": "success-notification",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1350, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Error notification\nconst scraperData = items[0].json;\n\nreturn [\n  {\n    json: {\n      notification_type: 'error',\n      title: 'Scraping Job Failed',\n      message: `Scraping failed at ${scraperData.timestamp}\\nErrors: ${scraperData.errors || 'Unknown error'}`,\n      timestamp: scraperData.timestamp,\n      debug_info: {\n        output: scraperData.output,\n        errors: scraperData.errors\n      }\n    }\n  }\n];"
+      },
+      "id": "error-notification",
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1350, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Scraper": {
+      "main": [
+        [
+          {
+            "node": "Parse Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Results": {
+      "main": [
+        [
+          {
+            "node": "Verify Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Database": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "scheduled-scraping-pipeline",
+  "meta": {
+    "instanceId": "local"
+  },
+  "tags": [
+    {
+      "name": "scraping",
+      "id": "1"
+    },
+    {
+      "name": "automation",
+      "id": "2"
+    }
+  ]
+}

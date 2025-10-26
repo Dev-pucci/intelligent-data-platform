@@ -1,0 +1,113 @@
+name: "YouTube Video Search"
+type: spa
+seed_url: "https://www.youtube.com/results?search_query=python+programming"
+
+# Crawler settings
+url_patterns: ["/results?", "/watch?", "/c/", "/channel/"]
+max_depth: 2
+
+# SPA-specific settings
+wait_for: "ytd-video-renderer"
+scroll: true
+scroll_pause: 3
+max_scroll_attempts: 8
+javascript_enabled: true
+wait_time: 4
+
+# Browser settings for SPA
+browser_config:
+  headless: true
+  viewport:
+    width: 1920
+    height: 1080
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  block_resources: ["image", "stylesheet", "font"]
+
+# Parser settings
+parser_type: css
+parser_config:
+  container: "ytd-video-renderer"
+  fields:
+    video_title: "a#video-title ::text"
+    video_url: "a#video-title ::attr(href)"
+    channel_name: "ytd-channel-name a ::text"
+    channel_url: "ytd-channel-name a ::attr(href)"
+    view_count: "span.inline-metadata-item:nth-child(1) ::text"
+    published_date: "span.inline-metadata-item:nth-child(2) ::text"
+    duration: "span.style-scope.ytd-thumbnail-overlay-time-status-renderer ::text"
+    thumbnail_url: "img ::attr(src)"
+    description_snippet: "yt-formatted-string#description-text ::text"
+
+# Video detail page parser
+detail_parser:
+  wait_for: "ytd-watch-metadata"
+  parser_type: css
+  parser_config:
+    container: "ytd-watch-metadata"
+    fields:
+      full_title: "h1.ytd-watch-metadata yt-formatted-string ::text"
+      like_count: "button[aria-label*='like'] ::text"
+      subscriber_count: "ytd-subscribe-button-renderer span ::text"
+      upload_date: "span[id='info'] yt-formatted-string ::text"
+      full_description: "ytd-text-inline-expander span ::text"
+      tags: "meta[name='keywords'] ::attr(content)"
+      category: "a.ytp-title-link ::text"
+      video_id: "::attr(video-id)"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["video_title", "full_description"]
+  - type: extract_number
+    fields: ["view_count", "like_count"]
+  - type: parse_duration
+    field: duration
+  - type: parse_relative_time
+    field: published_date
+  - type: build_full_url
+    field: video_url
+    base_url: "https://www.youtube.com"
+  - type: extract_video_id
+    field: video_url
+
+# Validation rules
+validators:
+  - field: video_title
+    required: true
+    min_length: 5
+    max_length: 200
+  - field: video_url
+    required: true
+    type: url
+    pattern: "^https://www.youtube.com/watch\\?v=[a-zA-Z0-9_-]{11}$"
+  - field: channel_name
+    required: true
+  - field: view_count
+    required: false
+    type: integer
+    min_value: 0
+
+# Scheduling
+schedule:
+  frequency: "every_6_hours"
+  priority: medium
+  
+# Rate limiting
+rate_limit:
+  requests_per_minute: 20
+  delay_between_requests: 3
+  
+# API integration option (recommended)
+api_fallback:
+  enabled: true
+  api_url: "https://www.googleapis.com/youtube/v3/search"
+  api_key_required: true
+  quota_aware: true
+  
+# Metadata
+metadata:
+  category: "video_platform"
+  platform: "youtube"
+  content_type: "video"
+  requires_javascript: true
+  high_bandwidth: true

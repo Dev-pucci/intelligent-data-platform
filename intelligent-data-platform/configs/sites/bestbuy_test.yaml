@@ -1,0 +1,16 @@
+name: Test BestBuy SPA
+type: spa
+seed_url: https://www.bestbuy.com/site/searchpage.jsp?st=laptop
+scraper_settings:
+  wait_for: body
+  scroll: true
+parser_type: ai
+parser_config:
+  model: deepseek-coder:1.3b
+  prompt_template: 'Extract the product name, price, and URL for each laptop listed
+    in the following HTML. Return a JSON array of objects, where each object has ''product_name'',
+    ''price'', and ''url'' keys. HTML: {text}'
+  fields:
+  - product_name
+  - price
+  - url

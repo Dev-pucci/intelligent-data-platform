@@ -1,0 +1,94 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "every",
+        "value": "5",
+        "unit": "minutes"
+      },
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env[\"API_BASE_URL\"] }}/api/v1/stats",
+        "method": "GET",
+        "jsonBody": true,
+        "authentication": "none"
+      },
+      "name": "Get API Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const apiStats = $json;\n\n// Log the stats for now. In a real scenario, you might format them\n// for Prometheus Pushgateway or another metrics sink.\nconsole.log('Collected API Stats:', apiStats);\n\nreturn [{ json: apiStats }];"
+      },
+      "name": "Process & Log Metrics",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:9091/metrics/job/n8n_metrics",
+        "method": "POST",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "metrics",
+              "value": "={{ $json.metrics_formatted_for_prometheus }}"
+            }
+          ]
+        },
+        "authentication": "none",
+        "jsonBody": false,
+        "sendBinaryData": false
+      },
+      "name": "Push to Prometheus (Placeholder)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Get API Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get API Stats": {
+      "main": [
+        [
+          {
+            "node": "Process & Log Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process & Log Metrics": {
+      "main": [
+        [
+          {
+            "node": "Push to Prometheus (Placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "name": "Monitoring Workflow - Collect Metrics",
+  "timezone": "Europe/Berlin"
+}

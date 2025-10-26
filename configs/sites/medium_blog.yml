@@ -1,0 +1,53 @@
+name: "Medium Blog Posts"
+type: html
+seed_url: "https://medium.com/tag/programming"
+
+# Crawler settings
+url_patterns: ["/tag/programming", "/@", "/p/"]
+max_depth: 3
+
+# Parser settings (for HTMLScraper) - Static HTML structure
+parser_type: css
+parser_config:
+  # Medium has a simple, static HTML structure for articles
+  container: "article"
+  fields:
+    title: "h1 ::text"
+    subtitle: "h2 ::text"
+    author: "a[rel='author'] ::text"
+    author_url: "a[rel='author'] ::attr(href)"
+    published_at: "time ::attr(datetime)"
+    reading_time: "span[data-testid='storyReadTime'] ::text"
+    content: "article p ::text"
+    claps: "button[aria-label*='claps'] ::text"
+    url: "link[rel='canonical'] ::attr(href)"
+    tags: "a[rel='tag'] ::text"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "subtitle", "content"]
+  - type: extract_number
+    field: reading_time
+  - type: parse_datetime
+    field: published_at
+  - type: join_list
+    field: content
+    separator: "\n"
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 5
+    max_length: 300
+  - field: author
+    required: true
+  - field: url
+    required: true
+    type: url
+
+# Scheduling
+schedule:
+  frequency: "daily"
+  priority: medium

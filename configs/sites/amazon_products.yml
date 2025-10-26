@@ -1,0 +1,77 @@
+name: "Amazon Product Listings"
+type: html
+seed_url: "https://www.amazon.com/s?k=laptop"
+
+# Crawler settings
+url_patterns: ["/s?", "/dp/", "/gp/product/"]
+max_depth: 2
+
+# Parser settings (for HTMLScraper) - E-commerce structure
+parser_type: css
+parser_config:
+  # Amazon product listing structure
+  container: "div[data-component-type='s-search-result']"
+  fields:
+    title: "h2 a span ::text"
+    url: "h2 a ::attr(href)"
+    price: "span.a-price span.a-offscreen ::text"
+    rating: "span.a-icon-alt ::text"
+    review_count: "span[aria-label*='stars'] + span ::text"
+    image_url: "img.s-image ::attr(src)"
+    prime_eligible: "i.a-icon-prime ::attr(aria-label)"
+    brand: "span.a-size-base-plus ::text"
+    asin: "::attr(data-asin)"
+
+# Product detail page (deeper scrape)
+detail_parser:
+  parser_type: css
+  parser_config:
+    container: "div#dp-container"
+    fields:
+      full_title: "span#productTitle ::text"
+      full_price: "span.a-price span.a-offscreen ::text"
+      description: "div#feature-bullets ul li span ::text"
+      specifications: "table.prodDetTable tr"
+      availability: "div#availability span ::text"
+      seller: "a#sellerProfileTriggerId ::text"
+      images: "img.a-dynamic-image ::attr(src)"
+
+# Data transformation rules
+transformers:
+  - type: clean_html
+    fields: ["title", "description"]
+  - type: extract_price
+    field: price
+  - type: extract_number
+    field: rating
+  - type: extract_number
+    field: review_count
+  - type: build_full_url
+    field: url
+    base_url: "https://www.amazon.com"
+
+# Validation rules
+validators:
+  - field: title
+    required: true
+    min_length: 10
+  - field: asin
+    required: true
+    pattern: "^[A-Z0-9]{10}$"
+  - field: price
+    required: false
+    type: decimal
+  - field: rating
+    required: false
+    min_value: 0
+    max_value: 5
+
+# Scheduling
+schedule:
+  frequency: "daily"
+  priority: medium
+  
+# Rate limiting (important for e-commerce sites)
+rate_limit:
+  requests_per_second: 1
+  delay_between_requests: 2

@@ -1,0 +1,14 @@
+name: "Government Statistics PDF"
+type: pdf
+seed_url: "https://www.gov.uk/government/statistics/example-report.pdf" # Fictional URL
+
+# Crawler settings
+url_patterns: ['\\.pdf$']
+max_depth: 1
+
+# Parser settings (for PDFScraper + AIParser)
+parser_type: ai
+parser_config:
+  model: "deepseek-coder:1.3b"
+  prompt_template: "From the following government report text, extract the 'Total Population', 'GDP Growth Rate', and 'Unemployment Rate'. Return as a JSON object with these keys. Text: {text}"
+  fields: ["Total Population", "GDP Growth Rate", "Unemployment Rate"]
