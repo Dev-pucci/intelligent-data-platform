@@ -188,3 +188,12 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Session generator for direct use (non-FastAPI)
+def get_db_session():
+    """Get database session for standalone scripts"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
