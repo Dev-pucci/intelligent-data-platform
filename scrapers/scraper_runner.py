@@ -28,9 +28,10 @@ def run_scraper(config_path: str):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    url = config.get('start_url')
+    # Support both 'start_url' and 'seed_url'
+    url = config.get('start_url') or config.get('seed_url')
     if not url:
-        raise ValueError(f"Config file must contain 'start_url': {config_path}")
+        raise ValueError(f"Config file must contain 'start_url' or 'seed_url': {config_path}")
 
     # Initialize scraper (no arguments needed)
     scraper = UniversalScraper()
