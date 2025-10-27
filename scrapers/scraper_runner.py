@@ -84,8 +84,8 @@ def save_to_database(results: list, source_url: str, site_name: str):
                 product_name=item.get('product_name'),
                 price=item.get('price'),
                 data_hash=data_hash,
-                raw_data=item,
-                created_at=datetime.now()
+                raw_data=item
+                # scraped_at is auto-set by database default
             )
 
             db.add(scraped_item)
