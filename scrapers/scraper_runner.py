@@ -17,22 +17,29 @@ def run_scraper(config_path: str):
         config_path: Path to the YAML configuration file
 
     Returns:
-        dict: Results of the scraping operation
+        list: Results of the scraping operation
     """
-    # Load config
+    # Validate config file exists
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
+    # Load config to get URL
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
-    # Initialize scraper
-    scraper = UniversalScraper(config)
+    url = config.get('start_url')
+    if not url:
+        raise ValueError(f"Config file must contain 'start_url': {config_path}")
 
-    # Run scraper
+    # Initialize scraper (no arguments needed)
+    scraper = UniversalScraper()
+
+    # Run scraper with config path and URL
     print(f"Starting scraper for: {config.get('name', 'Unknown')}")
-    results = scraper.scrape()
+    print(f"Target URL: {url}")
+
+    results = scraper.load_config_and_scrape(str(config_file), url)
 
     print(f"Scraping completed. Found {len(results)} items.")
     return results
